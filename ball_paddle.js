@@ -59,10 +59,20 @@ for(var c=0; c < brickColumnCount; c++) {
         bricks[c][r] = { x: 0, y: 0 };
     }
 }
+// 게임 종료시 최종 점수를 알려주는 endGame()
+
+function endGame() {
+  alert("You score :" + score);
+}
+
 // 게임플레읻중 점수를 보기위해 점수를 기록할 변수 선언
 var score = 0;
 
+// 스테이지를 안내할 stage 변수 선언
+var stage = 1;
 
+// 플레이어에게 3개의 생명 부여하기.
+let lives = 5;
 // --------------------------------------------------------------------------------------------------------위에는 변수및 게임을 구성하기위한 도구 선언들이였음.----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -72,7 +82,16 @@ var score = 0;
 document.addEventListener("keydown", keyDownHandler, false);
 document.addEventListener("keyup", keyUpHandler, false);
 
+//마우스 컨트롤로 패들 제어
+document.addEventListener("mousemove", mouseMoveHandler, false);
 
+// 마우스 움직일때 핸들링 함수
+function mouseMoveHandler(e) {
+  const relativeX = e.clientX - canvas.offsetLeft;
+  if (relativeX > paddleWidth / 2 && relativeX < canvas.width - paddleWidth / 2) {
+    paddleX = relativeX - paddleWidth / 2;
+  }
+}
 //키가 눌렷을때 핸들링 함수
 function keyDownHandler(e) {
   if (e.key === "Right" || e.key === "ArrowRight") {
@@ -117,9 +136,18 @@ function collisionDetection() {
           brickColor = color[rdcolornum];
           b.status = 0;
           score++;
-     }
-    } 
-    }
+          
+
+          // 벽돌이 다 깨지면 재생성할것임
+          if (score == brickRowCount * brickColumnCount) { // 모든 벽돌이 깨졌을 때
+            endGame();
+            document.location.reload();
+            
+
+          }
+       }
+      } 
+      }
     }
   }
 
@@ -129,15 +157,22 @@ function drawScore() {
     ctx.fillStyle = "#0095DD";
     ctx.fillText("Score: " + score, 8, 20);
   }
-
-
-// 충돌후 벽돌 사라지게
-for (let c = 0; c < brickColumnCount; c++) {
-  bricks[c] = [];
-  for (let r = 0; r < brickRowCount; r++) {
-    bricks[c][r] = { x: 0, y: 0, status: 1 };
-  }
+// 생명수 표시하는 화면 만들고 업데이트를 하기위한 drawLives 함수
+function drawLives() {
+    ctx.font = "16px Arial";
+    ctx.fillStyle = "#0095DD";
+    ctx.fillText(`Lives: ${lives}`, canvas.width - 65, 20);
 }
+
+ 
+  for (let c = 0; c < brickColumnCount; c++) {
+    bricks[c] = [];
+    for (let r = 0; r < brickRowCount; r++) {
+      bricks[c][r] = { x: 0, y: 0, status: 1 };
+   }
+  }
+
+
 
 
 // 최초로 공을 그리기 위한 drawBall()함수
@@ -148,6 +183,8 @@ function drawBall() {
   ctx.fill();
   ctx.closePath();
 }
+
+
 
 
 
@@ -183,13 +220,16 @@ function drawBricks() {
 
 
 
+
 // 공을 움직이기위한 draw()함수
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBricks();
   drawBall();
-  drawPaddle()
+  drawPaddle();
   drawScore();
+  drawLives();
+  //벽돌과의 충돌감지
   collisionDetection();
   
   // 양옆 방향으로 공 튕겨내기
@@ -209,12 +249,23 @@ function draw() {
       if (x > paddleX && x < paddleX + paddleWidth) {
       dy = -dy;
       brickColor = "#E0115F"
-      // 패들에공이닿지않고 바닥에닿으면 끝남
-    } 
-    else {
-      alert("GAME OVER");
-      document.location.reload();
-      clearInterval(interval);
+      
+    } else {
+      // 패들에공이닿지않고 바닥에닿으면 생기는 일
+      // 생명이 깎임
+      lives--;
+      // 생명이 0이될경우 게임오버
+      if (!lives) {
+        alert("Game OVER");
+        document.location.reload();
+      } else {
+      // 생명이 존재한다면 생명이 깎인후 공과 패들을 다시그리기.
+        x = canvas.width / 2;   
+        y = canvas.height / 2;
+        dx = 2;
+        dy = -2;
+        paddleX = (canvas.width - paddleWidth) / 2;
+      }
     }
   }
 
@@ -228,8 +279,9 @@ function draw() {
 
   x += dx;
   y += dy;
+  requestAnimationFrame(draw);
 }
   
 
-const interval = setInterval(draw, 10);
+draw();
 
